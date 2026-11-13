@@ -1,0 +1,1 @@
+Taruh best.tflite hasil ekspor LiteRT di folder ini.
