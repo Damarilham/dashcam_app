@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+﻿import 'package:material_ui/material_ui.dart';
 
 import 'core.dart';
 
@@ -60,6 +60,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               s.save();
             }),
           ),
+          SwitchListTile(
+            title: const Text('Aktifkan wakelock (layar tetap nyala)'),
+            subtitle: const Text('Matikan untuk mencegah overheat perangkat'),
+            value: s.wakelock,
+            onChanged: (v) => setState(() {
+              s.wakelock = v;
+              s.save();
+            }),
+          ),
+          slider('Skip deteksi (tiap N frame)', s.detectionIntervalFrames.toDouble(), 1, 10, 9,
+              (v) => 'setiap ${v.round()} frame', (v) => s.detectionIntervalFrames = v.round(),
+              hint: 'Semakin besar semakin ringan beban kamera (default: 3 = deteksi setiap 3 frame)'),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -77,6 +89,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (v) => '${(v * 100).round()}% lebar layar', (v) => s.laneHalf = v / 2),
           slider('Kepercayaan minimum', s.minConf, 0.2, 0.8, 12,
               (v) => '${(v * 100).round()}%', (v) => s.minConf = v),
+          slider('Kepercayaan minimum motor', s.minConfMotorcycle, 0.1, 0.6, 10,
+              (v) => '${(v * 100).round()}%', (v) => s.minConfMotorcycle = v,
+              hint: 'Semakin rendah semakin sensitif deteksi motor (default: 30%)'),
           slider('Sudut pandang kamera', s.hfov, 40, 140, 100, (v) => '${v.round()}°',
               (v) => s.hfov = v,
               hint: 'Kalibrasi: arahkan ke kendaraan yang jaraknya kamu tahu, ubah '

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' show Rect;
 
@@ -30,8 +30,9 @@ const frameAspect = 16 / 9;
 const alertFrames = 3;
 
 class Settings extends ChangeNotifier {
-  double dangerM = 10, warnM = 25, hfov = 70, laneHalf = 0.2, minConf = 0.4;
-  bool beep = true, includePeople = false;
+  double dangerM = 10, warnM = 25, hfov = 70, laneHalf = 0.2, minConf = 0.4, minConfMotorcycle = 0.3;
+  bool beep = true, includePeople = false, wakelock = false;
+  int detectionIntervalFrames = 3; // deteksi setiap N frame (semakin besar semakin ringan)
 
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -40,8 +41,11 @@ class Settings extends ChangeNotifier {
     hfov = p.getDouble('hfov') ?? hfov;
     laneHalf = p.getDouble('laneHalf') ?? laneHalf;
     minConf = p.getDouble('minConf') ?? minConf;
+    minConfMotorcycle = p.getDouble('minConfMotorcycle') ?? minConfMotorcycle;
     beep = p.getBool('beep') ?? beep;
     includePeople = p.getBool('includePeople') ?? includePeople;
+    wakelock = p.getBool('wakelock') ?? wakelock;
+    detectionIntervalFrames = p.getInt('detectionIntervalFrames') ?? detectionIntervalFrames;
   }
 
   Future<void> save() async {
@@ -52,8 +56,11 @@ class Settings extends ChangeNotifier {
     await p.setDouble('hfov', hfov);
     await p.setDouble('laneHalf', laneHalf);
     await p.setDouble('minConf', minConf);
+    await p.setDouble('minConfMotorcycle', minConfMotorcycle);
     await p.setBool('beep', beep);
     await p.setBool('includePeople', includePeople);
+    await p.setBool('wakelock', wakelock);
+    await p.setInt('detectionIntervalFrames', detectionIntervalFrames);
   }
 }
 
@@ -86,7 +93,8 @@ class Engine {
     final hRel = portrait ? 1.0 : 1 / frameAspect;
     final dw = real[0] * f / math.max(box.width * wRel, 1e-6);
     final dh = real[1] * f / math.max(box.height * hRel, 1e-6);
-    return math.max(dw, dh);
+    // Motor lebih sempit: pakai min() agar cukup satu dimensi dekat → dianggap dekat
+    return name == 'motorcycle' ? math.min(dw, dh) : math.max(dw, dh);
   }
 
   Alert evaluate(List<YOLOResult> results, {required bool portrait}) {
@@ -94,7 +102,8 @@ class Engine {
     String? name;
     double? nearest;
     for (final r in results) {
-      if (r.confidence < s.minConf || !classes.contains(r.className)) continue;
+      final conf = r.className == 'motorcycle' ? s.minConfMotorcycle : s.minConf;
+      if (r.confidence < conf || !classes.contains(r.className)) continue;
       final box = r.normalizedBox;
       if ((box.center.dx - 0.5).abs() > s.laneHalf) continue;
       final d = distance(r.className, box, portrait);
@@ -140,3 +149,6 @@ class History {
     await p.remove(_key);
   }
 }
+
+
+
